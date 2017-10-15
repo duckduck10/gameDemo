@@ -1,0 +1,237 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        *{
+            margin: 0;
+            padding:0;
+        }
+        html{
+            height:100%;
+            /*overflow: hidden;*/
+        }
+        body{
+            height:100%;
+            overflow: hidden;
+        }
+        #wrap{
+            height:100%;
+            width:80%;
+            float:left;
+            /*margin-right:218px;*/
+        }
+        #content{
+            float:left;
+            /*overflow: hidden;*/
+            /*margin-left:180px;*/
+            width:80%;
+            height:100%;
+        }
+        #controller{
+            float:left;
+            width:20%;
+            height:100%;
+            background:gray;
+        }
+        label{
+            font-size: x-large;
+            line-height:200%;
+        }
+        .balloon{
+            position:absolute;
+            width:100px;
+            height:100px;
+            /*border:2px solid black;*/
+            border-radius:50% 50% 20% 50%;
+            box-shadow:-4px -4px 40px -4px purple inset;
+            background:transparent;
+            transform:rotate(45deg);
+        }
+        .balloon:after{
+            content:'';
+            position:absolute;
+            right:-5px;
+            bottom:-5px;
+            border:10px solid transparent;
+            border-right-color:red;
+            transform:rotate(45deg);
+        }
+        @media all and (max-width:500px){
+            .balloon{
+                width:60px;
+                height:60px;
+            }
+        }
+    </style>
+    <script src="js/addEvent.js"></script>
+    <script src="js/interval.js"></script>
+    <script src="js/draft.js"></script>
+</head>
+<body>
+<!--1.需要一个气球
+    2.增加气球的数量
+    3.让气球上升
+    4.戳破气球
+-->
+
+    <div id="content">
+
+</div>
+<div id="controller">
+    <br/>
+    <br/>
+    <input type="text" id="num" placeholder="输入数量" style="width:100%">
+    <hr/>
+    <br/>
+    <input type="radio" name="effect" class="choice" id="boom" checked>
+    <label for="boom">爆炸</label>
+    <input type="radio" name="effect" class="choice" id="fade">
+    <label for="fade">淡化</label>
+    <hr/>
+    <input type="radio" name="color" id="purple" checked><label for="purple"></label>
+    <label for="purple">紫色</label>
+    <input type="radio" name="color" id="green"><label for="green"></label>
+    <label for="green">绿色</label>
+</div>
+
+</body>
+<script>
+    var num=5;
+    var wW=document.getElementById('content').offsetWidth;
+    var wH=document.getElementById('content').offsetHeight;
+    var bz=60;
+    var balloons=[];
+    var attr={color:'purple',choice:'boom'};
+    var timer=interval(move,1000/30);
+    var content=document.getElementById('content');
+    addEvent(document.body,'click',function(e){
+//        console.log(document.defaultView.getComputedStyle(e.target,null)["width"]);
+        var width=document.defaultView.getComputedStyle(balloons[0],null)["width"] || balloons[0].currentStyle["width"];//style 只能获取元素的内联样式
+        width=width.replace(/\D/g,"");
+//        console.log(width);
+        if(e.target.className==='balloon'&& e.target.offsetWidth==width && e.target.style.opacity==1){
+            if(attr.choice==='boom'){
+                boom.call(e.target,(function(){
+                    this.parentNode.removeChild(this);
+//                    console.log(this.parentNode)
+                }).bind(e.target));}
+            if(attr.choice==='fade'){
+                fade.call(e.target,(function(){
+                    this.parentNode.removeChild(this);
+                }).bind(e.target));
+            }
+            //e.target.parentNode.removeChild(e.target);
+
+            var index=balloons.lastIndexOf(e.target);
+//            console.log(index);
+           balloons.splice(index,1);
+            console.log(balloons.length);
+            if(balloons.length<num)
+            initial(num-balloons.length);
+        }
+    });
+    window.onresize=function() {
+        wW = document.getElementById('content').offsetWidth;
+        wH = document.getElementById('content').offsetHeight;
+        bz=document.defaultView.getComputedStyle(balloons[0],null)["width"];
+
+    };
+    addEvent(document.getElementById('controller'),'click',function(e){
+        if(e.target.name==='effect'){
+            switch (e.target.id){
+                case('boom'):attr.choice='boom';break;
+                case('fade'):attr.choice='fade';break;
+            }
+        }
+        if(e.target.name==='color'){
+               attr.color=e.target.id;
+            console.log(attr.color);
+            for(var i=0;i<balloons.length;i++){
+                balloons[i].style.boxShadow="-4px -4px 40px -4px "+attr.color+" inset";
+            }
+        }
+    });
+    addEvent(document.getElementById('num'),'change',function(e){
+//        setTimeout(console.log(e.target.value),1000);
+//        console.log(e.target.value)
+        e.target.value=e.target.value.replace(/\D/g,"");
+        if(e.target.value>10)e.target.value=10;
+        num=e.target.value;
+    });
+
+
+    initial(5);
+    //boom();
+
+    function initial(num){
+        var frag=document.createDocumentFragment();
+        for(var i=0;i<num;i++){
+            var balloon=document.createElement('div');
+            balloon.className='balloon';
+            balloon.style.top=wH+'px';
+
+            console.log(bz);
+            balloon.style.left=~~(Math.max(0,(Math.random()*wW)-bz))+'px';
+            balloon.speed=(Math.random()*2)+2;
+            balloon.style.opacity=1;
+            balloon.style.boxShadow="-4px -4px 40px -4px "+attr.color+" inset";
+            frag.appendChild(balloon);
+            balloons.push(balloon);
+            Drag(balloon);
+        }
+        content.appendChild(frag);
+        return balloon;
+    }
+
+
+    function move() {
+        for (var i = 0, len = balloons.length; i < len; i++) {
+            balloons[i].style.top = balloons[i].offsetTop - balloons[i].speed + 'px';
+            if(balloons[i].offsetTop<(-bz)){
+                balloons[i].style.top=wH+'px';
+                balloons[i].speed=(Math.random()*10)+1;
+//                console.log(wW);
+                balloons[i].style.left=~~(Math.max(0,(Math.random()*wW)-bz))+'px';
+            }
+        }
+    }
+
+    function boom(cb){
+        var boomRotate=[10,80];
+        var len=boomRotate.length;
+        var index=0;
+        this.timer=setInterval((function(){
+            if(this.offsetWidth<10){
+                clearInterval(this.timer);
+                //this.parentNode.removeChild(this);
+                cb&&cb();
+            }
+            index++;
+            index=index%len;
+            this.speed++;
+            this.style.width=this.offsetWidth-8+'px';
+            this.style.height=this.offsetHeight-8+'px';
+            this.style.transform='rotate('+boomRotate[index]+'deg)';
+//            console.log(this.style.width);
+        }).bind(this),1000/30);
+    }
+    function fade(cb){
+        this.timer=setInterval((function(){
+            if(this.style.opacity<0.2){
+                clearInterval(this.timer);
+                //this.parentNode.removeChild(this);
+                cb&&cb();
+            }
+            this.style.opacity=this.style.opacity-0.1;
+
+            //console.log(this.style.transform);
+        }).bind(this),1000/30);
+    }
+
+
+</script>
+</html>
